@@ -1,0 +1,231 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and regional preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "currency": { "type": "string", "maxLength": 10 },
+        "timezone": { "type": "string", "maxLength": 64 },
+        "dailyCalorieTarget": { "type": "number" },
+        "dailyProteinTarget": { "type": "number" },
+        "onboardingCompleted": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "currency", "timezone", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII for the user including email and messaging identifiers",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "maxLength": 254 },
+        "telegramChatId": { "type": "string", "maxLength": 64 },
+        "whatsappPhone": { "type": "string", "maxLength": 32 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "updatedAt"]
+    },
+    "FinancialAccount": {
+      "title": "FinancialAccount",
+      "description": "Bank, e-wallet, or cash account belonging to a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 80 },
+        "type": { "type": "string", "enum": ["cash", "bank", "ewallet", "investment"] },
+        "balance": { "type": "number" },
+        "color": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "balance", "color", "createdAt", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial income, expense, or transfer record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense", "transfer"] },
+        "category": { "type": "string", "maxLength": 64 },
+        "subcategory": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 240 },
+        "transactionDate": { "type": "string", "maxLength": 20 },
+        "transactionTime": { "type": "string", "maxLength": 10 },
+        "paymentMethod": { "type": "string", "maxLength": 64 },
+        "accountId": { "type": "string", "maxLength": 128 },
+        "toAccountId": { "type": "string", "maxLength": 128 },
+        "merchant": { "type": "string", "maxLength": 120 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "amount",
+        "type",
+        "category",
+        "subcategory",
+        "description",
+        "transactionDate",
+        "transactionTime",
+        "paymentMethod",
+        "accountId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CustomCategory": {
+      "title": "CustomCategory",
+      "description": "User-defined transaction category and subcategories",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 64 },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "group": { "type": "string", "maxLength": 64 },
+        "subcategories": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "group", "subcategories", "createdAt", "updatedAt"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Category or period spending budget with alert thresholds",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 80 },
+        "category": { "type": "string", "maxLength": 64 },
+        "subcategory": { "type": "string", "maxLength": 64 },
+        "limitAmount": { "type": "number" },
+        "period": { "type": "string", "enum": ["weekly", "monthly", "custom"] },
+        "threshold50": { "type": "boolean" },
+        "threshold80": { "type": "boolean" },
+        "threshold100": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "name",
+        "category",
+        "limitAmount",
+        "period",
+        "threshold50",
+        "threshold80",
+        "threshold100",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FoodLog": {
+      "title": "FoodLog",
+      "description": "Logged meal with verified nutrition totals and optional linked financial transaction",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "mealType": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack", "drinks"] },
+        "consumptionKind": { "type": "string", "enum": ["makan_utama", "jajan"] },
+        "mealName": { "type": "string", "maxLength": 160 },
+        "logDate": { "type": "string", "maxLength": 20 },
+        "logTime": { "type": "string", "maxLength": 10 },
+        "totalCalories": { "type": "number" },
+        "totalProtein": { "type": "number" },
+        "totalCarbs": { "type": "number" },
+        "totalFat": { "type": "number" },
+        "totalFiber": { "type": "number" },
+        "totalSodium": { "type": "number" },
+        "costAmount": { "type": "number" },
+        "linkedTransactionId": { "type": "string", "maxLength": 128 },
+        "itemsSummary": { "type": "string", "maxLength": 1500 },
+        "dataSourceSummary": { "type": "string", "maxLength": 240 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "mealType",
+        "consumptionKind",
+        "mealName",
+        "logDate",
+        "logTime",
+        "totalCalories",
+        "totalProtein",
+        "totalCarbs",
+        "totalFat",
+        "totalFiber",
+        "totalSodium",
+        "costAmount",
+        "itemsSummary",
+        "dataSourceSummary",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReportPreference": {
+      "title": "ReportPreference",
+      "description": "User automated reporting schedule and channel preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "frequency": { "type": "string", "enum": ["daily", "weekly", "biweekly", "monthly", "quarterly", "custom"] },
+        "telegramEnabled": { "type": "boolean" },
+        "whatsappEnabled": { "type": "boolean" },
+        "includeFinancial": { "type": "boolean" },
+        "includeNutrition": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "frequency",
+        "telegramEnabled",
+        "whatsappEnabled",
+        "includeFinancial",
+        "includeNutrition",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User non-PII profile and preferences"
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Isolated PII for user email, Telegram chat ID, and WhatsApp phone"
+    },
+    "/accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/FinancialAccount" },
+      "description": "User financial accounts"
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "User financial transactions"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/CustomCategory" },
+      "description": "User custom transaction categories"
+    },
+    "/budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/Budget" },
+      "description": "User spending budgets"
+    },
+    "/food_logs/{foodLogId}": {
+      "schema": { "$ref": "#/entities/FoodLog" },
+      "description": "User verified food and nutrition logs"
+    },
+    "/report_preferences/{userId}": {
+      "schema": { "$ref": "#/entities/ReportPreference" },
+      "description": "User scheduled report preferences"
+    }
+  }
+}

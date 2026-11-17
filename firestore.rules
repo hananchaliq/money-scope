@@ -1,0 +1,305 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. UserProfile Blueprint (/users/{userId})
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'currency', 'timezone', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'displayName', 'currency', 'timezone', 'dailyCalorieTarget', 'dailyProteinTarget', 'onboardingCompleted', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 10
+        && data.timezone is string && data.timezone.size() >= 1 && data.timezone.size() <= 64
+        && (!('dailyCalorieTarget' in data) || (data.dailyCalorieTarget is number && data.dailyCalorieTarget >= 500 && data.dailyCalorieTarget <= 15000))
+        && (!('dailyProteinTarget' in data) || (data.dailyProteinTarget is number && data.dailyProteinTarget >= 10 && data.dailyProteinTarget <= 1000))
+        && (!('onboardingCompleted' in data) || data.onboardingCompleted is bool)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 2. UserPrivateInfo Blueprint (/users/{userId}/private/{docId})
+    function isValidUserPrivateInfo(data) {
+      return data.keys().hasAll(['userId', 'email', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'email', 'telegramChatId', 'whatsappPhone', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && (!('telegramChatId' in data) || (data.telegramChatId is string && data.telegramChatId.size() <= 64))
+        && (!('whatsappPhone' in data) || (data.whatsappPhone is string && data.whatsappPhone.size() <= 32))
+        && data.updatedAt is timestamp;
+    }
+
+    // 3. FinancialAccount Blueprint (/accounts/{accountId})
+    function isValidFinancialAccount(data) {
+      return data.keys().hasAll(['userId', 'name', 'type', 'balance', 'color', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'name', 'type', 'balance', 'color', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.type is string && data.type.size() <= 20 && data.type in ['cash', 'bank', 'ewallet', 'investment']
+        && data.balance is number
+        && data.color is string && data.color.size() >= 1 && data.color.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Transaction Blueprint (/transactions/{transactionId})
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'amount', 'type', 'category', 'subcategory', 'description', 'transactionDate', 'transactionTime', 'paymentMethod', 'accountId', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'amount', 'type', 'category', 'subcategory', 'description', 'transactionDate', 'transactionTime', 'paymentMethod', 'accountId', 'toAccountId', 'merchant', 'notes', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.amount is number && data.amount > 0 && data.amount <= 1000000000000
+        && data.type is string && data.type.size() <= 20 && data.type in ['income', 'expense', 'transfer']
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 64
+        && data.subcategory is string && data.subcategory.size() >= 1 && data.subcategory.size() <= 64
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 240
+        && data.transactionDate is string && data.transactionDate.size() >= 8 && data.transactionDate.size() <= 20
+        && data.transactionTime is string && data.transactionTime.size() >= 4 && data.transactionTime.size() <= 10
+        && data.paymentMethod is string && data.paymentMethod.size() >= 1 && data.paymentMethod.size() <= 64
+        && data.accountId is string && data.accountId.size() >= 1 && data.accountId.size() <= 128
+        && (!('toAccountId' in data) || (data.toAccountId is string && data.toAccountId.size() <= 128))
+        && (!('merchant' in data) || (data.merchant is string && data.merchant.size() <= 120))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 5. CustomCategory Blueprint (/categories/{categoryId})
+    function isValidCustomCategory(data) {
+      return data.keys().hasAll(['userId', 'name', 'type', 'group', 'subcategories', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'name', 'type', 'group', 'subcategories', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 64
+        && data.type is string && data.type.size() <= 20 && data.type in ['income', 'expense']
+        && data.group is string && data.group.size() >= 1 && data.group.size() <= 64
+        && data.subcategories is list && data.subcategories.size() >= 1 && data.subcategories.size() <= 20
+        && data.subcategories[0] is string && data.subcategories[0].size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 6. Budget Blueprint (/budgets/{budgetId})
+    function isValidBudget(data) {
+      return data.keys().hasAll(['userId', 'name', 'category', 'limitAmount', 'period', 'threshold50', 'threshold80', 'threshold100', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'name', 'category', 'subcategory', 'limitAmount', 'period', 'threshold50', 'threshold80', 'threshold100', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 64
+        && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 64))
+        && data.limitAmount is number && data.limitAmount > 0 && data.limitAmount <= 1000000000000
+        && data.period is string && data.period.size() <= 20 && data.period in ['weekly', 'monthly', 'custom']
+        && data.threshold50 is bool
+        && data.threshold80 is bool
+        && data.threshold100 is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 7. FoodLog Blueprint (/food_logs/{foodLogId})
+    function isValidFoodLog(data) {
+      return data.keys().hasAll(['userId', 'mealType', 'consumptionKind', 'mealName', 'logDate', 'logTime', 'totalCalories', 'totalProtein', 'totalCarbs', 'totalFat', 'totalFiber', 'totalSodium', 'costAmount', 'itemsSummary', 'dataSourceSummary', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'mealType', 'consumptionKind', 'mealName', 'logDate', 'logTime', 'totalCalories', 'totalProtein', 'totalCarbs', 'totalFat', 'totalFiber', 'totalSodium', 'costAmount', 'linkedTransactionId', 'itemsSummary', 'dataSourceSummary', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.mealType is string && data.mealType.size() <= 20 && data.mealType in ['breakfast', 'lunch', 'dinner', 'snack', 'drinks']
+        && data.consumptionKind is string && data.consumptionKind.size() <= 20 && data.consumptionKind in ['makan_utama', 'jajan']
+        && data.mealName is string && data.mealName.size() >= 1 && data.mealName.size() <= 160
+        && data.logDate is string && data.logDate.size() >= 8 && data.logDate.size() <= 20
+        && data.logTime is string && data.logTime.size() >= 4 && data.logTime.size() <= 10
+        && data.totalCalories is number && data.totalCalories >= 0 && data.totalCalories <= 20000
+        && data.totalProtein is number && data.totalProtein >= 0 && data.totalProtein <= 2000
+        && data.totalCarbs is number && data.totalCarbs >= 0 && data.totalCarbs <= 2000
+        && data.totalFat is number && data.totalFat >= 0 && data.totalFat <= 2000
+        && data.totalFiber is number && data.totalFiber >= 0 && data.totalFiber <= 500
+        && data.totalSodium is number && data.totalSodium >= 0 && data.totalSodium <= 50000
+        && data.costAmount is number && data.costAmount >= 0 && data.costAmount <= 1000000000
+        && (!('linkedTransactionId' in data) || (data.linkedTransactionId is string && data.linkedTransactionId.size() <= 128))
+        && data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 1500
+        && data.dataSourceSummary is string && data.dataSourceSummary.size() >= 1 && data.dataSourceSummary.size() <= 240
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 8. ReportPreference Blueprint (/report_preferences/{userId})
+    function isValidReportPreference(data) {
+      return data.keys().hasAll(['userId', 'frequency', 'telegramEnabled', 'whatsappEnabled', 'includeFinancial', 'includeNutrition', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'frequency', 'telegramEnabled', 'whatsappEnabled', 'includeFinancial', 'includeNutrition', 'updatedAt'])
+        && data.userId is string && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.frequency is string && data.frequency.size() <= 20 && data.frequency in ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'custom']
+        && data.telegramEnabled is bool
+        && data.whatsappEnabled is bool
+        && data.includeFinancial is bool
+        && data.includeNutrition is bool
+        && data.updatedAt is timestamp;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'currency', 'timezone', 'dailyCalorieTarget', 'dailyProteinTarget', 'onboardingCompleted', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      // Subcollection 2: /users/{userId}/private/{docId} (Master Gate + PII Isolation)
+      match /private/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId)
+          && request.auth.uid == userId
+          && get(/databases/$(database)/documents/users/$(userId)).data.userId == request.auth.uid;
+        allow create: if isSignedIn() && isValidId(userId) && isValidId(docId)
+          && request.auth.uid == userId
+          && isValidUserPrivateInfo(incoming())
+          && incoming().updatedAt == request.time
+          && get(/databases/$(database)/documents/users/$(userId)).data.userId == request.auth.uid;
+        allow update: if isSignedIn() && isValidId(userId) && isValidId(docId)
+          && request.auth.uid == userId
+          && isValidUserPrivateInfo(incoming())
+          && incoming().userId == existing().userId
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'telegramChatId', 'whatsappPhone', 'updatedAt'])
+          && get(/databases/$(database)/documents/users/$(userId)).data.userId == request.auth.uid;
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(docId)
+          && request.auth.uid == userId
+          && get(/databases/$(database)/documents/users/$(userId)).data.userId == request.auth.uid;
+      }
+    }
+
+    // Collection 3: /accounts/{accountId}
+    match /accounts/{accountId} {
+      allow get: if isSignedIn() && isValidId(accountId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(accountId)
+        && isValidFinancialAccount(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(accountId)
+        && isValidFinancialAccount(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'balance', 'color', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(accountId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 4: /transactions/{transactionId}
+    match /transactions/{transactionId} {
+      allow get: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(transactionId)
+        && isValidTransaction(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(transactionId)
+        && isValidTransaction(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'type', 'category', 'subcategory', 'description', 'transactionDate', 'transactionTime', 'paymentMethod', 'accountId', 'toAccountId', 'merchant', 'notes', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(transactionId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 5: /categories/{categoryId}
+    match /categories/{categoryId} {
+      allow get: if isSignedIn() && isValidId(categoryId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(categoryId)
+        && isValidCustomCategory(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(categoryId)
+        && isValidCustomCategory(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'group', 'subcategories', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(categoryId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 6: /budgets/{budgetId}
+    match /budgets/{budgetId} {
+      allow get: if isSignedIn() && isValidId(budgetId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(budgetId)
+        && isValidBudget(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(budgetId)
+        && isValidBudget(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'subcategory', 'limitAmount', 'period', 'threshold50', 'threshold80', 'threshold100', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(budgetId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 7: /food_logs/{foodLogId}
+    match /food_logs/{foodLogId} {
+      allow get: if isSignedIn() && isValidId(foodLogId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(foodLogId)
+        && isValidFoodLog(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(foodLogId)
+        && isValidFoodLog(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['mealType', 'consumptionKind', 'mealName', 'logDate', 'logTime', 'totalCalories', 'totalProtein', 'totalCarbs', 'totalFat', 'totalFiber', 'totalSodium', 'costAmount', 'linkedTransactionId', 'itemsSummary', 'dataSourceSummary', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(foodLogId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 8: /report_preferences/{userId}
+    match /report_preferences/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidReportPreference(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidReportPreference(incoming())
+        && incoming().userId == existing().userId
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['frequency', 'telegramEnabled', 'whatsappEnabled', 'includeFinancial', 'includeNutrition', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+  }
+}
