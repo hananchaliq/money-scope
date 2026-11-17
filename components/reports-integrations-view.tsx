@@ -540,17 +540,17 @@ export function ReportsIntegrationsView({
       </div>
 
       {/* Right: Live Report Preview sourced strictly from User Database */}
-      <div className="lg:col-span-5 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
+      <div className="lg:col-span-5 p-4 sm:p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] space-y-4">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-emerald-500" />
           <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-            Live Preview Laporan (Dari Data Database Aktual)
+            Pratinjau Pesan Laporan
           </h3>
         </div>
         <p className="text-xs text-neutral-500">
-          Seluruh angka di bawah ini dihitung secara langsung dari transaksi dan jurnal nutrisi yang tersimpan di database Anda:
+          Format pesan laporan yang akan dikirimkan ke Telegram atau WhatsApp Anda:
         </p>
-        <pre className="p-4 rounded-xl bg-neutral-950 text-emerald-300 font-mono text-xs whitespace-pre-wrap leading-relaxed border border-neutral-800 overflow-x-auto">
+        <pre className="p-4 rounded-2xl bg-neutral-950 text-emerald-300 font-mono text-xs whitespace-pre-wrap leading-relaxed border border-neutral-800 overflow-x-auto">
           {reportPreviewText}
         </pre>
       </div>

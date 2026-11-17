@@ -79,15 +79,15 @@ export function TimeAnalyticsView({ transactions, referenceDate }: TimeAnalytics
   return (
     <div className="space-y-6">
       {/* Period Selector Header */}
-      <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
+      <div className="p-4 sm:p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-              Analitik Berbasis Waktu (Rolling vs Calendar Period)
+            <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+              Analitik Arus Kas &amp; Periode Waktu
             </h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              {windowRange.description} · Rentang Aktif: {formatDateID(windowRange.startDate)} –{' '}
-              {formatDateID(windowRange.endDate)} ({windowRange.periodKind.toUpperCase()})
+              {windowRange.description} · {formatDateID(windowRange.startDate)} –{' '}
+              {formatDateID(windowRange.endDate)}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function TimeAnalyticsView({ transactions, referenceDate }: TimeAnalytics
         </div>
 
         {/* Quick Period Segmented Bar */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex overflow-x-auto pb-1 sm:flex-wrap gap-1.5">
           {(
             [
               'today',
@@ -136,9 +136,9 @@ export function TimeAnalyticsView({ transactions, referenceDate }: TimeAnalytics
                   setDrilldownCategory(null);
                   setDrilldownDate(null);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
                   active
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-emerald-500 text-neutral-950'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                 }`}
               >
@@ -175,37 +175,37 @@ export function TimeAnalyticsView({ transactions, referenceDate }: TimeAnalytics
       </div>
 
       {/* Period Summary KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <div className="text-xs text-neutral-500">Total Pemasukan</div>
-          <div className="text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716]">
+          <div className="text-[11px] text-neutral-500">Total Pemasukan</div>
+          <div className="text-sm sm:text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-1 whitespace-nowrap">
             {formatIDR(analytics.totalIncome)}
           </div>
           {analytics.incomeChangePct !== null && (
-            <div className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-0.5 font-mono tabular-nums">
-              <ArrowUpRight className="w-3 h-3 text-emerald-500" />
-              {analytics.incomeChangePct > 0 ? `+${analytics.incomeChangePct}%` : `${analytics.incomeChangePct}%`} vs periode lalu
+            <div className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 flex items-center gap-0.5 font-mono tabular-nums">
+              <ArrowUpRight className="w-3 h-3 text-emerald-500 shrink-0" />
+              <span className="truncate">{analytics.incomeChangePct > 0 ? `+${analytics.incomeChangePct}%` : `${analytics.incomeChangePct}%`} vs lalu</span>
             </div>
           )}
         </div>
 
-        <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <div className="text-xs text-neutral-500">Total Pengeluaran</div>
-          <div className="text-lg font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716]">
+          <div className="text-[11px] text-neutral-500">Total Pengeluaran</div>
+          <div className="text-sm sm:text-lg font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-1 whitespace-nowrap">
             {formatIDR(analytics.totalExpense)}
           </div>
           {analytics.expenseChangePct !== null && (
-            <div className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-0.5 font-mono tabular-nums">
-              <ArrowDownRight className="w-3 h-3 text-rose-500" />
-              {analytics.expenseChangePct > 0 ? `+${analytics.expenseChangePct}%` : `${analytics.expenseChangePct}%`} vs periode lalu
+            <div className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 flex items-center gap-0.5 font-mono tabular-nums">
+              <ArrowDownRight className="w-3 h-3 text-rose-500 shrink-0" />
+              <span className="truncate">{analytics.expenseChangePct > 0 ? `+${analytics.expenseChangePct}%` : `${analytics.expenseChangePct}%`} vs lalu</span>
             </div>
           )}
         </div>
 
-        <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <div className="text-xs text-neutral-500">Net Cash Flow</div>
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716]">
+          <div className="text-[11px] text-neutral-500">Arus Kas Bersih</div>
           <div
-            className={`text-lg font-bold font-mono tabular-nums mt-1 ${
+            className={`text-sm sm:text-lg font-bold font-mono tabular-nums mt-1 whitespace-nowrap ${
               analytics.netCashFlow >= 0
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-rose-600 dark:text-rose-400'
@@ -213,35 +213,35 @@ export function TimeAnalyticsView({ transactions, referenceDate }: TimeAnalytics
           >
             {formatIDR(analytics.netCashFlow)}
           </div>
-          <div className="text-[11px] text-neutral-400 mt-0.5 font-mono tabular-nums">
-            {analytics.transactionCount} transaksi tercatat
+          <div className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 font-mono tabular-nums">
+            {analytics.transactionCount} transaksi
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <div className="text-xs text-neutral-500">Rata-rata Harian</div>
-          <div className="text-lg font-bold font-mono tabular-nums text-neutral-900 dark:text-white mt-1">
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716]">
+          <div className="text-[11px] text-neutral-500">Rata-rata Harian</div>
+          <div className="text-sm sm:text-lg font-bold font-mono tabular-nums text-neutral-900 dark:text-white mt-1 whitespace-nowrap">
             {formatIDR(analytics.averageDailyExpense)}
           </div>
-          <div className="text-[11px] text-neutral-400 mt-0.5">Pengeluaran per hari</div>
+          <div className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5">Pengeluaran / hari</div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <div className="text-xs text-neutral-500">Pengeluaran Terbesar</div>
-          <div className="text-lg font-bold font-mono tabular-nums text-neutral-900 dark:text-white mt-1 truncate">
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716]">
+          <div className="text-[11px] text-neutral-500">Transaksi Terbesar</div>
+          <div className="text-sm sm:text-lg font-bold font-mono tabular-nums text-neutral-900 dark:text-white mt-1 truncate whitespace-nowrap">
             {analytics.largestExpense ? formatIDR(analytics.largestExpense.amount) : 'Rp 0'}
           </div>
-          <div className="text-[11px] text-neutral-400 mt-0.5 truncate">
+          <div className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 truncate">
             {analytics.largestExpense ? analytics.largestExpense.description : 'Belum ada data'}
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <div className="text-xs text-neutral-500">Kategori Dominan</div>
-          <div className="text-lg font-bold text-neutral-900 dark:text-white mt-1 truncate">
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716]">
+          <div className="text-[11px] text-neutral-500">Kategori Utama</div>
+          <div className="text-sm sm:text-lg font-bold text-neutral-900 dark:text-white mt-1 truncate">
             {analytics.dominantCategory ? analytics.dominantCategory.category : '-'}
           </div>
-          <div className="text-[11px] text-neutral-400 mt-0.5 font-mono tabular-nums">
+          <div className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 font-mono tabular-nums truncate">
             {analytics.dominantCategory
               ? `${analytics.dominantCategory.percentage}% (${formatIDR(analytics.dominantCategory.amount)})`
               : 'Belum ada pengeluaran'}
@@ -325,13 +325,13 @@ export function TimeAnalyticsView({ transactions, referenceDate }: TimeAnalytics
         </div>
 
         {/* Category Distribution Bar Chart & Interactive Drill-down Buttons */}
-        <div className="lg:col-span-5 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
+        <div className="lg:col-span-5 p-4 sm:p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] space-y-4">
           <div>
             <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-              Distribusi Kategori (Interactive Drill-Down)
+              Distribusi Pengeluaran per Kategori
             </h3>
             <p className="text-xs text-neutral-500">
-              Tekan kategori (mis. Makanan atau Jajan) untuk menyaring transaksi kategori tersebut.
+              Ketuk salah satu kategori di bawah untuk melihat rincian transaksinya.
             </p>
           </div>
 

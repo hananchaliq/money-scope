@@ -191,7 +191,7 @@ export const VERIFIED_FOOD_REFERENCE_DB: ReferenceFoodEntry[] = [
   {
     dbId: 'USDA-FDC-169928',
     nameId: 'Buah Persik / Peach / Buah Segar',
-    aliases: ['peach', 'persik', 'buah', 'apel', 'pisang', 'mangga', 'alpukat', 'corn', 'jagung'],
+    aliases: ['peach', 'persik', 'buah persik', 'buah', 'apel', 'pisang', 'mangga', 'alpukat'],
     source: 'USDA FoodData Central #169928 & TKPI',
     caloriesPer100g: 46,
     proteinPer100g: 1.1,
@@ -200,6 +200,19 @@ export const VERIFIED_FOOD_REFERENCE_DB: ReferenceFoodEntry[] = [
     fiberPer100g: 1.8,
     sodiumMgPer100g: 2,
     defaultServingGrams: 120,
+  },
+  {
+    dbId: 'TKPI-SY014',
+    nameId: 'Jagung Manis Pipil (Rebus)',
+    aliases: ['jagung manis', 'jagung', 'sweet corn', 'corn'],
+    source: 'TKPI Kemenkes RI (Kode SY014) & USDA FDC #169998',
+    caloriesPer100g: 96,
+    proteinPer100g: 3.4,
+    carbsPer100g: 21.0,
+    fatPer100g: 1.5,
+    fiberPer100g: 2.4,
+    sodiumMgPer100g: 15,
+    defaultServingGrams: 65,
   },
   {
     dbId: 'TKPI-RT003',
@@ -229,8 +242,15 @@ export const VERIFIED_FOOD_REFERENCE_DB: ReferenceFoodEntry[] = [
   },
 ];
 
+function containsWholePhrase(haystack: string, alias: string): boolean {
+  const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'i');
+  return regex.test(haystack);
+}
+
 /**
  * Matches a detected food name & portion (in grams) against our verified TKPI/USDA reference database.
+ * Uses whole-word boundary matching and prioritizes longer, more specific aliases first.
  */
 export function matchLocalVerifiedFood(
   detectedName: string,
@@ -239,13 +259,22 @@ export function matchLocalVerifiedFood(
   confidenceScore: number
 ): VerifiedFoodItem | null {
   const norm = `${detectedName} ${englishQuery}`.toLowerCase();
-  const matched = VERIFIED_FOOD_REFERENCE_DB.find((entry) =>
-    entry.aliases.some((alias) => norm.includes(alias))
-  );
 
-  if (!matched) return null;
+  let bestMatch: ReferenceFoodEntry | null = null;
+  let bestAliasLength = 0;
 
-  const grams = estimatedGrams > 0 ? estimatedGrams : matched.defaultServingGrams;
+  for (const entry of VERIFIED_FOOD_REFERENCE_DB) {
+    for (const alias of entry.aliases) {
+      if (containsWholePhrase(norm, alias) && alias.length > bestAliasLength) {
+        bestMatch = entry;
+        bestAliasLength = alias.length;
+      }
+    }
+  }
+
+  if (!bestMatch) return null;
+
+  const grams = estimatedGrams > 0 ? estimatedGrams : bestMatch.defaultServingGrams;
   const ratio = grams / 100;
 
   let status: EstimationStatus = 'verified_match';
@@ -256,20 +285,21 @@ export function matchLocalVerifiedFood(
   }
 
   return {
-    id: `${matched.dbId}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `${bestMatch.dbId}-${Math.random().toString(36).slice(2, 7)}`,
     foodName: detectedName,
-    matchedDbId: matched.dbId,
-    matchedDbName: matched.nameId,
+    matchedDbId: bestMatch.dbId,
+    matchedDbName: bestMatch.nameId,
     servingSize: Math.round(grams),
     servingUnit: 'g',
-    calories: Math.round(matched.caloriesPer100g * ratio),
-    protein: Number((matched.proteinPer100g * ratio).toFixed(1)),
-    carbs: Number((matched.carbsPer100g * ratio).toFixed(1)),
-    fat: Number((matched.fatPer100g * ratio).toFixed(1)),
-    fiber: Number((matched.fiberPer100g * ratio).toFixed(1)),
-    sodium: Math.round(matched.sodiumMgPer100g * ratio),
-    dataSource: matched.source,
+    calories: Math.round(bestMatch.caloriesPer100g * ratio),
+    protein: Number((bestMatch.proteinPer100g * ratio).toFixed(1)),
+    carbs: Number((bestMatch.carbsPer100g * ratio).toFixed(1)),
+    fat: Number((bestMatch.fatPer100g * ratio).toFixed(1)),
+    fiber: Number((bestMatch.fiberPer100g * ratio).toFixed(1)),
+    sodium: Math.round(bestMatch.sodiumMgPer100g * ratio),
+    dataSource: bestMatch.source,
     confidenceScore: Number(confidenceScore.toFixed(2)),
     estimationStatus: status,
   };
 }
+

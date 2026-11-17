@@ -10,6 +10,7 @@ import {
   parseAndValidateCSV,
   resolvePeriodWindow,
 } from './analytics-engine';
+import { matchLocalVerifiedFood } from './nutrition-db';
 import { BudgetRecord, FoodLogRecord, TransactionRecord } from './types';
 
 test('formatIDR and formatDateID follow Indonesian locale standards', () => {
@@ -179,3 +180,18 @@ invalid-date,08:30,expense,Makanan,Sarapan,-500,Invalid Row,Tunai`;
   assert.equal(result.valid[0].amount, 15000);
   assert.equal(result.errors.length, 1);
 });
+
+test('matchLocalVerifiedFood enforces word boundaries so bayam does not match ayam', () => {
+  const spinach = matchLocalVerifiedFood('daun bayam', 'spinach', 80, 0.92);
+  assert.ok(spinach);
+  assert.equal(spinach.matchedDbId, 'TKPI-SY002');
+
+  const corn = matchLocalVerifiedFood('jagung manis', 'sweet corn', 65, 0.9);
+  assert.ok(corn);
+  assert.equal(corn.matchedDbId, 'TKPI-SY014');
+
+  const chicken = matchLocalVerifiedFood('ayam bakar', 'grilled chicken', 110, 0.95);
+  assert.ok(chicken);
+  assert.equal(chicken.matchedDbId, 'TKPI-GP004');
+});
+

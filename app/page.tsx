@@ -51,7 +51,6 @@ import {
   Sparkles,
   Trash2,
   X,
-  Menu,
   ArrowUpRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -135,7 +134,6 @@ function toIsoString(val: unknown): string {
 export default function MoneyScopePage() {
   const [activeTab, setActiveTab] = useState<NavTabId>('dashboard');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
   const [quickAddOpen, setQuickAddOpen] = useState<boolean>(false);
 
   // Quick Add Modal State
@@ -786,7 +784,7 @@ export default function MoneyScopePage() {
             className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            Catat Cepat (Quick Add)
+            Catat Transaksi Baru
           </motion.button>
 
           {user ? (
@@ -821,29 +819,26 @@ export default function MoneyScopePage() {
 
       {/* Main Content Column */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0 pb-28 lg:pb-10">
-        {/* Sticky Top Header (Follows 3-Zone Top Bar Contract + Finnova Pill Capsule Navigation) */}
-        <header className="sticky top-0 z-30 h-16 px-4 lg:px-8 border-b border-neutral-200/80 dark:border-neutral-800/80 bg-white/90 dark:bg-[#0B0F0E]/90 backdrop-blur-xl flex items-center justify-between gap-4">
-          {/* Zone 1: Brand / Active Section Title */}
+        {/* Sticky Top Header (Clean Brand on Mobile, No Hamburger Sidebar Button) */}
+        <header className="sticky top-0 z-30 h-14 sm:h-16 px-4 lg:px-8 border-b border-neutral-200/80 dark:border-neutral-800/80 bg-white/90 dark:bg-[#0B0F0E]/90 backdrop-blur-xl flex items-center justify-between gap-3">
+          {/* Zone 1: Brand + Active Section Title */}
           <div className="flex items-center gap-2.5 min-w-0 shrink-0">
-            <button
-              type="button"
-              onClick={() => setMobileDrawerOpen((o) => !o)}
-              aria-label="Menu Navigasi Lengkap"
-              className="lg:hidden p-2 -ml-1 rounded-xl text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <span className="text-base font-bold tracking-tight text-neutral-900 dark:text-white truncate">
-              {navItems.find((n) => n.id === activeTab)?.label || 'MoneyScope'}
+            <span className="lg:hidden w-7 h-7 rounded-lg bg-emerald-500 text-neutral-950 font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+              M
             </span>
+            <div className="min-w-0">
+              <span className="text-sm sm:text-base font-bold tracking-tight text-neutral-900 dark:text-white truncate block">
+                {navItems.find((n) => n.id === activeTab)?.label || 'MoneyScope'}
+              </span>
+            </div>
           </div>
 
           {/* Zone 2: Finnova-Style Dark Capsule Pill Navigation on Desktop */}
           <nav className="hidden md:flex items-center p-1 rounded-full bg-neutral-900 dark:bg-[#141A18] border border-neutral-800/80 text-xs font-medium text-neutral-300 shadow-sm">
             {[
               { id: 'dashboard' as NavTabId, label: 'Ringkasan' },
-              { id: 'analytics' as NavTabId, label: '15 Periode Waktu' },
-              { id: 'nutrition' as NavTabId, label: 'AI Food Scan' },
+              { id: 'analytics' as NavTabId, label: 'Analitik Waktu' },
+              { id: 'nutrition' as NavTabId, label: 'Nutrisi AI' },
               { id: 'studio3d' as NavTabId, label: '3D Vault' },
               { id: 'reports' as NavTabId, label: 'Telegram & WA' },
             ].map((pill) => {
@@ -877,7 +872,7 @@ export default function MoneyScopePage() {
             {!isOnline && (
               <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-500 text-xs font-medium flex items-center gap-1 whitespace-nowrap">
                 <WifiOff className="w-3.5 h-3.5" />
-                Offline ({offlineQueueCount} antrean)
+                Offline ({offlineQueueCount})
               </span>
             )}
 
@@ -888,7 +883,7 @@ export default function MoneyScopePage() {
                 className="px-3 py-1.5 rounded-full border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 hover:bg-emerald-500/10 transition-colors whitespace-nowrap shrink-0"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Install PWA</span>
+                <span className="hidden sm:inline">Install App</span>
               </button>
             )}
 
@@ -914,44 +909,37 @@ export default function MoneyScopePage() {
           </div>
         </header>
 
-        {/* Mobile Secondary Drawer for Reports, Budgets & Settings */}
-        <AnimatePresence>
-          {mobileDrawerOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="lg:hidden bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 py-3 space-y-1.5 z-20"
-            >
-              <div className="text-[11px] font-semibold text-neutral-400 pb-1">
-                Semua Modul MoneyScope
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setMobileDrawerOpen(false);
-                      }}
-                      className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                        activeTab === item.id
-                          ? 'bg-emerald-500/15 text-emerald-500 font-semibold'
-                          : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Sleek Horizontal Module Scroller on Mobile (Replaces Sidebar Hamburger Menu cleanly) */}
+        <div className="lg:hidden border-b border-neutral-200/80 dark:border-neutral-800/80 bg-white/80 dark:bg-[#0F1413]/90 backdrop-blur-md px-3.5 py-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 min-w-max">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isCurrent = activeTab === item.id;
+              return (
+                <button
+                  key={`mob-pill-${item.id}`}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`relative px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 ${
+                    isCurrent
+                      ? 'text-neutral-950'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                  }`}
+                >
+                  {isCurrent && (
+                    <motion.div
+                      layoutId="mobile-top-module-pill"
+                      transition={{ type: 'spring', stiffness: 460, damping: 32 }}
+                      className="absolute inset-0 rounded-full bg-emerald-400 shadow-sm pointer-events-none"
+                    />
+                  )}
+                  <Icon className="w-3.5 h-3.5 relative z-10 shrink-0" />
+                  <span className="relative z-10">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Main Workspace Container */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
@@ -973,52 +961,62 @@ export default function MoneyScopePage() {
               className="space-y-6"
             >
               {/* 4-Card Finnova Bento KPI Strip with Embedded Interactive Micro-Visualizations */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
                 {/* Card 1: Total Saldo Bersih + Cashflow Wave */}
                 <motion.div
                   whileHover={{ y: -3 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                  className="p-5 rounded-3xl bg-[#D9F99D] dark:bg-[#D9F99D] text-neutral-950 flex flex-col justify-between shadow-sm"
+                  className="p-4 sm:p-5 rounded-3xl bg-[#D9F99D] dark:bg-[#D9F99D] text-neutral-950 flex flex-col justify-between shadow-sm"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-neutral-800">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-neutral-800 truncate">
                       Total Saldo Bersih · {formatDateID(REFERENCE_TODAY)}
                     </span>
-                    <span className="text-[11px] font-mono font-semibold text-neutral-800">
-                      IDR · Asia/Jakarta
+                    <span className="text-[10px] font-mono font-semibold text-neutral-800 shrink-0">
+                      IDR
                     </span>
                   </div>
 
-                  <div className="my-3">
+                  <div className="my-2.5">
                     <div
                       data-testid="dashboard-total-balance"
-                      className="text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight text-neutral-950"
+                      className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-neutral-950 whitespace-nowrap"
                     >
                       {formatIDR(totalAccountBalance)}
                     </div>
-                    <div className="text-xs text-neutral-800 mt-1 font-medium">
-                      Net Cash Flow Bulan Ini: <span className="font-mono tabular-nums font-bold">{formatIDR(monthAnalytics.netCashFlow)}</span>
+                    <div className="text-[11px] sm:text-xs text-neutral-800 mt-1 font-medium">
+                      Arus Kas Bulan Ini:{' '}
+                      <span className="font-mono tabular-nums font-bold whitespace-nowrap">
+                        {formatIDR(monthAnalytics.netCashFlow)}
+                      </span>
                       {monthAnalytics.expenseChangePct !== null && (
-                        <span> · {monthAnalytics.expenseChangePct > 0 ? `+${monthAnalytics.expenseChangePct}%` : `${monthAnalytics.expenseChangePct}%`} vs bulan lalu</span>
+                        <span>
+                          {' '}
+                          ·{' '}
+                          {monthAnalytics.expenseChangePct > 0
+                            ? `+${monthAnalytics.expenseChangePct}%`
+                            : `${monthAnalytics.expenseChangePct}%`}{' '}
+                          vs lalu
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-neutral-950/15">
-                    <div>
-                      <div className="text-[11px] font-medium text-neutral-700">Total Pemasukan</div>
+                  <div className="grid grid-cols-2 gap-2.5 pt-2.5 border-t border-neutral-950/15">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-medium text-neutral-700">Pemasukan</div>
                       <div
                         data-testid="dashboard-total-income"
-                        className="text-sm font-bold font-mono tabular-nums text-emerald-950"
+                        className="text-xs sm:text-sm font-bold font-mono tabular-nums text-emerald-950 whitespace-nowrap truncate"
                       >
                         +{formatIDR(monthAnalytics.totalIncome)}
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[11px] font-medium text-neutral-700">Total Pengeluaran</div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-medium text-neutral-700">Pengeluaran</div>
                       <div
                         data-testid="dashboard-total-expense"
-                        className="text-sm font-bold font-mono tabular-nums text-rose-900"
+                        className="text-xs sm:text-sm font-bold font-mono tabular-nums text-rose-900 whitespace-nowrap truncate"
                       >
                         -{formatIDR(monthAnalytics.totalExpense)}
                       </div>
@@ -1026,31 +1024,31 @@ export default function MoneyScopePage() {
                   </div>
                 </motion.div>
 
-                {/* Card 2: Makan Utama vs Jajan + Animated 7-Bar Micro Chart (Finnova Card 2 Style) */}
+                {/* Card 2: Makan Utama vs Jajan + Animated 7-Bar Micro Chart */}
                 <motion.div
                   whileHover={{ y: -3 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                  className="p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] flex flex-col justify-between"
+                  className="p-4 sm:p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] flex flex-col justify-between"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 truncate">
                       Makan Utama vs Jajan Bulan Ini
                     </span>
-                    <span className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                    <span className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
                       <Utensils className="w-3.5 h-3.5" />
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 my-2.5">
-                    <div>
-                      <div className="text-[11px] text-neutral-400">Makanan Utama</div>
-                      <div className="text-base font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                  <div className="grid grid-cols-2 gap-2 my-2">
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-neutral-400 truncate">Makanan Utama</div>
+                      <div className="text-xs sm:text-sm font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 whitespace-nowrap truncate">
                         {formatIDR(monthAnalytics.makananExpense)}
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[11px] text-neutral-400">Jajan, Kopi &amp; Camilan</div>
-                      <div className="text-base font-bold font-mono tabular-nums text-amber-500">
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-neutral-400 truncate">Jajan &amp; Kopi</div>
+                      <div className="text-xs sm:text-sm font-bold font-mono tabular-nums text-amber-500 whitespace-nowrap truncate">
                         {formatIDR(monthAnalytics.jajanExpense)}
                       </div>
                     </div>
@@ -1229,26 +1227,26 @@ export default function MoneyScopePage() {
                 </motion.div>
               </div>
 
-              {/* Honest Empty State when Database has 0 Transactions (Section 15 Real Data Policy) */}
+              {/* Empty State when Database has 0 Transactions */}
               {transactions.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.99 }}
                   animate={{ opacity: 1, scale: 1 }}
                   data-testid="empty-database-state"
-                  className="p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] text-center max-w-2xl mx-auto space-y-4 shadow-sm"
+                  className="p-6 sm:p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] text-center max-w-2xl mx-auto space-y-4 shadow-sm"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center mx-auto">
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div className="space-y-1.5">
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-                      Database Anda Masih Kosong (Zero Dummy Data Policy)
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+                      Belum Ada Transaksi Tercatat
                     </h2>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                      Sesuai kebijakan kejujuran data MoneyScope, kami tidak menampilkan statistik fiktif atau transaksi palsu saat database kosong. Tambahkan transaksi pertama Anda untuk mengaktifkan grafik analitik, Smart Insights, dan perhitungan korelasi nutrisi.
+                      Mulai catat pemasukan dan pengeluaran pertama Anda untuk menampilkan grafik arus kas, evaluasi anggaran, serta korelasi biaya dan nutrisi harian.
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
                     <motion.button
                       type="button"
                       whileHover={{ scale: 1.03 }}
@@ -1266,7 +1264,7 @@ export default function MoneyScopePage() {
                       onClick={() => setActiveTab('nutrition')}
                       className="px-4 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-semibold transition-colors"
                     >
-                      Scan Foto Makanan (AI Nutrition)
+                      Pindai Foto Makanan
                     </motion.button>
                   </div>
                 </motion.div>
@@ -1560,10 +1558,10 @@ export default function MoneyScopePage() {
                           );
                         })()}
 
-                        {/* Smart Insights (Computed from real transactions) */}
+                        {/* Smart Insights */}
                         <div className="space-y-2.5">
                           <h3 className="text-xs font-bold text-neutral-300">
-                            Smart Insights (Dari Transaksi Aktual)
+                            Insight Finansial Otomatis
                           </h3>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {smartInsights.map((ins) => (
@@ -1747,7 +1745,7 @@ export default function MoneyScopePage() {
           <div className="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h2 id="quick-add-title" className="text-base font-bold text-neutral-900 dark:text-white">
-                Catat Transaksi Cepat (Quick Add)
+                Catat Transaksi Baru
               </h2>
               <button
                 type="button"
