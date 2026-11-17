@@ -7,7 +7,6 @@ import {
   ArrowLeftRight,
   Clock,
   Utensils,
-  Box,
   Plus,
 } from 'lucide-react';
 
@@ -37,9 +36,11 @@ const PRIMARY_MOBILE_TABS: PrimaryNavItem[] = [
   { id: 'dashboard', label: 'Beranda', icon: LayoutDashboard },
   { id: 'transactions', label: 'Transaksi', icon: ArrowLeftRight },
   { id: 'analytics', label: 'Analitik', icon: Clock },
-  { id: 'nutrition', label: 'Nutrisi AI', icon: Utensils },
-  { id: 'studio3d', label: '3D Vault', icon: Box },
+  { id: 'nutrition', label: 'Nutrisi', icon: Utensils },
 ];
+
+const LENS_WIDTH = 122;
+const LENS_HEIGHT = 76;
 
 export function MobileLiquidNavbar({
   activeTab,
@@ -49,18 +50,25 @@ export function MobileLiquidNavbar({
   const pillRef = useRef<HTMLDivElement>(null);
   const [isHolding, setIsHolding] = useState(false);
   const [dragLensIdx, setDragLensIdx] = useState<number | null>(null);
-  const [dragXRatio, setDragXRatio] = useState<number | null>(null);
+  const [pillWidth, setPillWidth] = useState<number>(300);
+  const [lensCenterX, setLensCenterX] = useState<number | null>(null);
   const holdTimerRef = useRef<number | null>(null);
 
   const activeIdx = PRIMARY_MOBILE_TABS.findIndex((t) => t.id === activeTab);
-  const lensIndex = dragLensIdx !== null ? dragLensIdx : activeIdx >= 0 ? activeIdx : 0;
+  const resolvedIdx = dragLensIdx !== null ? dragLensIdx : activeIdx >= 0 ? activeIdx : 0;
 
-  const computeIndexFromClientX = (clientX: number) => {
-    if (!pillRef.current) return lensIndex;
+  const updateFromClientX = (clientX: number) => {
+    if (!pillRef.current) return resolvedIdx;
     const rect = pillRef.current.getBoundingClientRect();
-    const relX = Math.max(0, Math.min(rect.width, clientX - rect.left));
-    const ratio = relX / rect.width;
-    setDragXRatio(ratio);
+    const width = Math.max(220, rect.width);
+    setPillWidth(width);
+
+    const relX = Math.max(0, Math.min(width, clientX - rect.left));
+    // Clamp lens center so the droplet stays gracefully on the pill track
+    const clampedCenter = Math.max(LENS_WIDTH * 0.42, Math.min(width - LENS_WIDTH * 0.42, relX));
+    setLensCenterX(clampedCenter);
+
+    const ratio = relX / width;
     const idx = Math.min(
       PRIMARY_MOBILE_TABS.length - 1,
       Math.max(0, Math.floor(ratio * PRIMARY_MOBILE_TABS.length))
@@ -69,18 +77,28 @@ export function MobileLiquidNavbar({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLElement>, idx: number) => {
+    if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+    if (pillRef.current) {
+      const rect = pillRef.current.getBoundingClientRect();
+      const width = Math.max(220, rect.width);
+      setPillWidth(width);
+      const tabCenter = ((idx + 0.5) / PRIMARY_MOBILE_TABS.length) * width;
+      const relX = e.clientX ? e.clientX - rect.left : tabCenter;
+      const clampedCenter = Math.max(
+        LENS_WIDTH * 0.42,
+        Math.min(width - LENS_WIDTH * 0.42, relX)
+      );
+      setLensCenterX(clampedCenter);
+    }
     setDragLensIdx(idx);
     onSelectTab(PRIMARY_MOBILE_TABS[idx].id);
-    computeIndexFromClientX(e.clientX);
-    // Immediately activate liquid glass rainbow refraction on press, and sustain on hold/drag
     setIsHolding(true);
-    if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
     if (!isHolding) return;
-    const idx = computeIndexFromClientX(e.clientX);
-    if (idx !== lensIndex) {
+    const idx = updateFromClientX(e.clientX);
+    if (idx !== resolvedIdx) {
       setDragLensIdx(idx);
       onSelectTab(PRIMARY_MOBILE_TABS[idx].id);
     }
@@ -88,49 +106,27 @@ export function MobileLiquidNavbar({
 
   const handlePointerUpOrLeave = () => {
     if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
-    // Keep the liquid rainbow bloom visible briefly after release so the user sees the settling refraction
+    // Keep the iOS 26.1 Liquid Glass droplet visible briefly on release so user sees the smooth optical settle
     holdTimerRef.current = window.setTimeout(() => {
       setIsHolding(false);
-      setDragXRatio(null);
+      setLensCenterX(null);
       setDragLensIdx(null);
-    }, 650);
+    }, 600);
   };
 
-  // Calculate left percentage for the liquid glass bubble
   const tabCount = PRIMARY_MOBILE_TABS.length;
-  const targetLeftPercent =
-    isHolding && dragXRatio !== null
-      ? Math.max(10, Math.min(90, dragXRatio * 100))
-      : ((lensIndex + 0.5) / tabCount) * 100;
+  const defaultCenterPx = ((resolvedIdx + 0.5) / tabCount) * pillWidth;
+  const activeLensCenterPx =
+    isHolding && lensCenterX !== null ? lensCenterX : defaultCenterPx;
+  const lensLeftPx = activeLensCenterPx - LENS_WIDTH / 2;
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden px-3 pb-3 pt-1 pointer-events-none select-none"
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden px-3.5 pb-4 pt-6 pointer-events-none select-none bg-gradient-to-t from-black/90 via-black/55 to-transparent"
       aria-label="Navigasi Bawah Mobile iOS Liquid Glass"
     >
-      {/* Hidden SVG Optical Refraction Filter for authentic iOS 26 Liquid Glass */}
-      <svg className="sr-only" aria-hidden="true">
-        <defs>
-          <filter id="ios-liquid-refraction" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.015 0.04"
-              numOctaves="2"
-              result="noise"
-            />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="noise"
-              scale="6"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-        </defs>
-      </svg>
-
-      <div className="max-w-md mx-auto flex items-center gap-2.5 pointer-events-auto">
-        {/* Main iOS 26 Liquid Glass Pill Container (matches Image 5 & Auralys) */}
+      <div className="max-w-[400px] mx-auto flex items-center pointer-events-auto">
+        {/* Main iOS 26.1 Matte Dark Pill Track */}
         <div
           ref={pillRef}
           onPointerMove={handlePointerMove}
@@ -138,112 +134,28 @@ export function MobileLiquidNavbar({
           onPointerCancel={handlePointerUpOrLeave}
           onPointerLeave={handlePointerUpOrLeave}
           style={{ touchAction: 'none' }}
-          className="relative flex-1 h-[62px] rounded-full bg-neutral-900/85 dark:bg-neutral-900/88 backdrop-blur-2xl border border-white/15 shadow-[0_14px_34px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.22),inset_0_-1px_2px_rgba(0,0,0,0.6)] flex items-center justify-between px-1.5 overflow-visible"
+          className="relative flex-1 h-[64px] rounded-full bg-[#1b1c20]/95 backdrop-blur-2xl border border-white/[0.12] shadow-[0_16px_36px_rgba(0,0,0,0.75),inset_0_1px_0.5px_rgba(255,255,255,0.18)] flex items-center justify-between px-1 overflow-visible"
         >
-          {/* Subtle inner glass sheen */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.09] via-transparent to-black/30"
-          />
-
-          {/* Protruding iOS Liquid Glass Lens Bubble with Prismatic Rainbow Rim */}
-          <motion.div
-            aria-hidden="true"
-            animate={{
-              left: `${targetLeftPercent}%`,
-              scaleX: isHolding ? 1.12 : 1.0,
-              scaleY: isHolding ? 1.15 : 1.0,
-            }}
-            transition={{
-              type: 'spring',
-              stiffness: 420,
-              damping: 28,
-              mass: 0.7,
-            }}
-            style={{
-              width: isHolding ? '114px' : '74px',
-              height: isHolding ? '70px' : '52px',
-              x: '-50%',
-            }}
-            className="pointer-events-none absolute top-1/2 -translate-y-1/2 z-20 rounded-full flex items-center justify-center transition-[width,height] duration-150"
-          >
-            {/* Outer Prismatic Rainbow Refraction Rim (vivid on press-and-hold like Image 5) */}
-            <div
-              className={`absolute inset-0 rounded-full transition-opacity duration-200 ${
-                isHolding ? 'opacity-100' : 'opacity-65'
-              }`}
+          {/* Subtle Resting Active Pill Indicator (only shown when NOT holding the magnifying droplet) */}
+          {!isHolding && (
+            <motion.div
+              layoutId="mobile-resting-pill"
+              aria-hidden="true"
+              transition={{ type: 'spring', stiffness: 420, damping: 30 }}
               style={{
-                padding: isHolding ? '2.5px' : '1.5px',
-                background: isHolding
-                  ? 'conic-gradient(from 180deg at 50% 50%, #00f2fe 0deg, #4facfe 45deg, #10b981 95deg, #facc15 145deg, #f43f5e 190deg, #a855f7 240deg, #38bdf8 300deg, #00f2fe 360deg)'
-                  : 'linear-gradient(135deg, rgba(56,189,248,0.65), rgba(16,185,129,0.35), rgba(255,255,255,0.45))',
-                WebkitMask:
-                  'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                WebkitMaskComposite: 'xor',
-                maskComposite: 'exclude',
-                filter: isHolding ? 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.55))' : 'none',
+                width: `${100 / tabCount}%`,
+                left: `${(resolvedIdx / tabCount) * 100}%`,
               }}
-            />
+              className="pointer-events-none absolute top-1.5 bottom-1.5 z-10 px-1"
+            >
+              <div className="w-full h-full rounded-full bg-white/[0.09] border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]" />
+            </motion.div>
+          )}
 
-            {/* Secondary Chromatic Dispersion Caustics along Top & Bottom Curvature (Image 5 exact look) */}
-            <AnimatePresence>
-              {isHolding && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-[1px] rounded-full pointer-events-none"
-                  style={{
-                    boxShadow:
-                      'inset 0 4px 8px -1px rgba(56, 189, 248, 0.75), inset 0 -4px 8px -1px rgba(16, 185, 129, 0.7), inset 5px 0 10px -2px rgba(99, 102, 241, 0.65), inset -5px 0 10px -2px rgba(250, 204, 21, 0.6), 0 10px 28px rgba(0, 0, 0, 0.65)',
-                    background:
-                      'radial-gradient(120% 95% at 50% 18%, rgba(255,255,255,0.34) 0%, rgba(56,189,248,0.14) 42%, rgba(15,23,42,0.28) 78%, rgba(16,185,129,0.24) 100%)',
-                    backdropFilter: 'blur(6px) saturate(210%) contrast(115%)',
-                  }}
-                />
-              )}
-            </AnimatePresence>
-
-            {/* Resting Liquid Glass Lens Body */}
-            {!isHolding && (
-              <div
-                className="absolute inset-[1px] rounded-full"
-                style={{
-                  background:
-                    'radial-gradient(100% 100% at 50% 15%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 55%, rgba(16,185,129,0.14) 100%)',
-                  boxShadow:
-                    'inset 0 1.5px 2px rgba(255,255,255,0.45), inset 0 -1.5px 3px rgba(56,189,248,0.35), 0 4px 14px rgba(0,0,0,0.4)',
-                }}
-              />
-            )}
-
-            {/* Top Specular Glass Arc Highlight (Exact iOS 26 lens reflection) */}
-            <div
-              className="absolute top-[3px] left-[16%] right-[16%] h-[6px] rounded-full pointer-events-none"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 100%)',
-                opacity: isHolding ? 0.95 : 0.6,
-              }}
-            />
-
-            {/* Bottom Refracted Rim Arc */}
-            <div
-              className="absolute bottom-[3px] left-[18%] right-[18%] h-[4px] rounded-full pointer-events-none"
-              style={{
-                background:
-                  'linear-gradient(90deg, rgba(56,189,248,0.8), rgba(16,185,129,0.9), rgba(250,204,21,0.8))',
-                opacity: isHolding ? 0.95 : 0.4,
-                filter: 'blur(0.5px)',
-              }}
-            />
-          </motion.div>
-
-          {/* Tab Buttons */}
+          {/* Base Layer: 4 Crisp White Tab Buttons */}
           {PRIMARY_MOBILE_TABS.map((item, idx) => {
             const Icon = item.icon;
-            const isSelected = activeTab === item.id;
-            const isUnderLens = lensIndex === idx;
+            const isSelected = resolvedIdx === idx;
 
             return (
               <button
@@ -253,65 +165,164 @@ export function MobileLiquidNavbar({
                 onClick={() => onSelectTab(item.id)}
                 aria-label={item.label}
                 aria-current={isSelected ? 'page' : undefined}
-                className="relative z-30 flex-1 min-h-[54px] flex flex-col items-center justify-center gap-0.5 rounded-full focus-visible:outline-none"
+                className="relative z-20 flex-1 h-full flex flex-col items-center justify-center gap-1 rounded-full focus-visible:outline-none"
               >
-                <motion.div
-                  animate={{
-                    scale: isUnderLens && isHolding ? 1.26 : isSelected ? 1.08 : 1.0,
-                    y: isUnderLens && isHolding ? -1 : 0,
-                  }}
-                  transition={{ type: 'spring', stiffness: 450, damping: 24 }}
-                  className="flex flex-col items-center justify-center"
+                <Icon
+                  className={`w-[22px] h-[22px] transition-colors duration-150 ${
+                    !isHolding && isSelected
+                      ? 'text-[#38bdf8]'
+                      : 'text-white/95'
+                  }`}
+                />
+                <span
+                  className={`text-[11px] font-medium tracking-tight leading-none whitespace-nowrap transition-colors duration-150 ${
+                    !isHolding && isSelected
+                      ? 'text-[#38bdf8] font-semibold'
+                      : 'text-white/90'
+                  }`}
                 >
-                  <Icon
-                    className={`w-[20px] h-[20px] transition-colors duration-150 ${
-                      isUnderLens && isHolding
-                        ? 'text-sky-300 drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]'
-                        : isSelected
-                        ? 'text-emerald-400'
-                        : 'text-neutral-300'
-                    }`}
-                  />
-                  <span
-                    className={`text-[10px] font-semibold tracking-tight leading-none mt-1 whitespace-nowrap transition-colors duration-150 ${
-                      isUnderLens && isHolding
-                        ? 'text-sky-300 font-bold'
-                        : isSelected
-                        ? 'text-white'
-                        : 'text-neutral-400'
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                </motion.div>
+                  {item.label}
+                </span>
               </button>
             );
           })}
+
+          {/* iOS 26.1 Beta 4 Liquid Glass Magnifying Lens Droplet (True Clipped Optical Zoom Layer) */}
+          <AnimatePresence>
+            {isHolding && (
+              <motion.div
+                aria-hidden="true"
+                initial={{ opacity: 0, scale: 0.88 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  left: `${lensLeftPx}px`,
+                }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 460,
+                  damping: 30,
+                  mass: 0.65,
+                }}
+                style={{
+                  width: `${LENS_WIDTH}px`,
+                  height: `${LENS_HEIGHT}px`,
+                }}
+                className="pointer-events-none absolute top-1/2 -translate-y-1/2 z-40 rounded-full"
+              >
+                {/* 1. Clipped Optical Magnifier Viewport (renders 1.3x zoomed Sky-Blue #38bdf8 tabs inside the droplet, matching Image 5!) */}
+                <div
+                  className="relative w-full h-full rounded-full overflow-hidden"
+                  style={{
+                    background:
+                      'radial-gradient(110% 100% at 50% 50%, #2a2c32 0%, #202227 68%, #16181d 100%)',
+                    boxShadow:
+                      '0 0 0 1.5px rgba(0,0,0,0.88), 0 14px 30px rgba(0,0,0,0.75)',
+                  }}
+                >
+                  {/* Synchronized Inner Track of 4 Tabs Scaled 1.32x in iOS Cyan-Blue (#38bdf8) */}
+                  <div
+                    style={{
+                      width: `${pillWidth}px`,
+                      height: '64px',
+                      transform: `translate3d(${-lensLeftPx}px, ${(LENS_HEIGHT - 64) / 2}px, 0)`,
+                    }}
+                    className="absolute top-0 left-0 flex items-center justify-between px-1"
+                  >
+                    {PRIMARY_MOBILE_TABS.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={`zoom-${item.id}`}
+                          className="flex-1 h-full flex flex-col items-center justify-center gap-1"
+                          style={{
+                            transform: 'scale(1.32)',
+                            transformOrigin: 'center center',
+                          }}
+                        >
+                          <Icon className="w-[22px] h-[22px] text-[#38bdf8] drop-shadow-[0_0_6px_rgba(56,189,248,0.45)]" />
+                          <span className="text-[11px] font-bold tracking-tight leading-none text-[#38bdf8] whitespace-nowrap">
+                            {item.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 2. Left & Right Curved Glass Caustics (Cyan & Emerald Internal Refraction like Image 5) */}
+                  <div
+                    className="absolute inset-0 rounded-full pointer-events-none"
+                    style={{
+                      boxShadow:
+                        'inset 7px 0 10px -3px rgba(56, 189, 248, 0.72), inset -7px 0 10px -3px rgba(34, 197, 94, 0.68), inset 0 3px 6px rgba(255, 255, 255, 0.35), inset 0 -3px 6px rgba(56, 189, 248, 0.45)',
+                    }}
+                  />
+
+                  {/* 3. Top Dark-Mirror Specular Band + Chromatic Fringe (Exact Image 5 Top Edge) */}
+                  <div
+                    className="absolute top-[2px] left-[16%] right-[16%] h-[6px] rounded-full pointer-events-none"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, rgba(56,189,248,0.85) 0%, rgba(16,185,129,0.9) 18%, rgba(10,12,16,0.92) 38%, rgba(10,12,16,0.92) 62%, rgba(250,204,21,0.9) 82%, rgba(244,63,94,0.85) 100%)',
+                      boxShadow: '0 1px 2px rgba(255,255,255,0.45)',
+                    }}
+                  />
+
+                  {/* 4. Bottom Dark-Mirror Specular Band + Chromatic Fringe (Exact Image 5 Bottom Edge) */}
+                  <div
+                    className="absolute bottom-[2px] left-[16%] right-[16%] h-[6px] rounded-full pointer-events-none"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, rgba(56,189,248,0.85) 0%, rgba(34,197,94,0.9) 20%, rgba(10,12,16,0.94) 40%, rgba(10,12,16,0.94) 60%, rgba(250,204,21,0.9) 80%, rgba(244,63,94,0.85) 100%)',
+                      boxShadow: '0 -1px 2px rgba(56,189,248,0.4)',
+                    }}
+                  />
+                </div>
+
+                {/* 5. Razor-Sharp 2px Prismatic Glass Bezel Ring (Toned-Down iOS 26.1 Beta 4 Rim) */}
+                <div
+                  className="absolute inset-0 rounded-full pointer-events-none"
+                  style={{
+                    padding: '2px',
+                    background:
+                      'conic-gradient(from 180deg at 50% 50%, #38bdf8 0deg, #22c55e 55deg, #fde047 115deg, #f43f5e 170deg, #38bdf8 235deg, #10b981 300deg, #38bdf8 360deg)',
+                    WebkitMask:
+                      'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                    opacity: 0.92,
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Subtle Liquid Metaball Bridge between Main Pill and Right Circle (matches Image 5) */}
+        {/* Authentic Dark Metaball Connector Neck (matches Image 5 pinch between pill and circle) */}
         <div
           aria-hidden="true"
-          className="w-2.5 h-5 -mx-2 bg-neutral-900/90 border-y border-white/15 shrink-0 pointer-events-none"
+          className="w-2.5 h-4 -mx-1 bg-[#1b1c20]/95 border-y border-white/[0.12] shrink-0 pointer-events-none"
         />
 
-        {/* Detached Right Circular Liquid Glass Action Button (Quick Add, matching Image 5's right circle) */}
+        {/* Detached Right Circular Action Button (matches Image 5 right circle) */}
         <motion.button
           type="button"
-          whileTap={{ scale: 1.16 }}
+          whileTap={{ scale: 0.93 }}
+          whileHover={{ scale: 1.04 }}
           onClick={onQuickAdd}
           aria-label="Catat Transaksi Cepat"
-          className="relative w-[58px] h-[58px] shrink-0 rounded-full bg-neutral-900/90 border border-white/20 shadow-[0_12px_28px_rgba(0,0,0,0.55),inset_0_1.5px_2px_rgba(255,255,255,0.35),inset_0_-2px_6px_rgba(16,185,129,0.45)] flex items-center justify-center text-emerald-400 active:text-sky-300 transition-colors overflow-hidden"
+          className="relative w-[62px] h-[62px] shrink-0 rounded-full bg-[#1b1c20]/95 border border-white/[0.14] shadow-[0_14px_32px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.22)] flex items-center justify-center text-white active:text-[#38bdf8] transition-colors overflow-hidden"
         >
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-full opacity-75"
+            className="pointer-events-none absolute inset-0 rounded-full"
             style={{
               background:
-                'radial-gradient(circle at 50% 20%, rgba(255,255,255,0.22), transparent 60%)',
+                'radial-gradient(circle at 50% 18%, rgba(255,255,255,0.16), transparent 62%)',
             }}
           />
-          <Plus className="w-6 h-6 relative z-10 stroke-[2.5]" />
+          <Plus className="w-6 h-6 relative z-10 stroke-[2.4]" />
         </motion.button>
       </div>
     </nav>

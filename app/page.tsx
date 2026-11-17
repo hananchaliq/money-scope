@@ -52,7 +52,9 @@ import {
   Trash2,
   X,
   Menu,
+  ArrowUpRight,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   auth,
   db,
@@ -172,6 +174,11 @@ export default function MoneyScopePage() {
   const isOnline = useOnlineStatus();
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSModal, setShowIOSModal] = useState<boolean>(false);
+
+  // Interactive Finnova Dashboard States
+  const [activeWalletIdx, setActiveWalletIdx] = useState<number>(1);
+  const [selectedInspectTxId, setSelectedInspectTxId] = useState<string | null>(null);
+  const [masterFilterTab, setMasterFilterTab] = useState<'all' | 'food_jajan' | 'income'>('all');
 
   // Sync dark/light class on <html>
   useEffect(() => {
@@ -743,33 +750,44 @@ export default function MoneyScopePage() {
             const Icon = item.icon;
             const active = activeTab === item.id;
             return (
-              <button
+              <motion.button
                 key={item.id}
                 type="button"
+                whileHover={{ x: 3 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition-colors whitespace-nowrap ${
+                className={`relative w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition-colors whitespace-nowrap ${
                   active
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                    ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-white'
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
-              </button>
+                {active && (
+                  <motion.div
+                    layoutId="sidebar-active-pill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-xl bg-emerald-500/15 border border-emerald-500/35 pointer-events-none"
+                  />
+                )}
+                <Icon className="w-4 h-4 shrink-0 relative z-10" />
+                <span className="relative z-10">{item.label}</span>
+              </motion.button>
             );
           })}
         </nav>
 
         {/* Sidebar Footer: Quick Add + Auth State */}
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800/80 space-y-3">
-          <button
+          <motion.button
             type="button"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => setQuickAddOpen(true)}
             className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             Catat Cepat (Quick Add)
-          </button>
+          </motion.button>
 
           {user ? (
             <div className="flex items-center justify-between text-xs pt-1">
@@ -802,16 +820,16 @@ export default function MoneyScopePage() {
       </aside>
 
       {/* Main Content Column */}
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0 pb-24 lg:pb-10">
-        {/* Sticky Top Header (Follows Top Bar Contract & Mobile Sticky Header requirement) */}
-        <header className="sticky top-0 z-30 h-14 lg:h-16 px-4 lg:px-8 border-b border-neutral-200 dark:border-neutral-800/80 bg-white/90 dark:bg-[#0B0F0E]/90 backdrop-blur-md flex items-center justify-between gap-4">
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0 pb-28 lg:pb-10">
+        {/* Sticky Top Header (Follows 3-Zone Top Bar Contract + Finnova Pill Capsule Navigation) */}
+        <header className="sticky top-0 z-30 h-16 px-4 lg:px-8 border-b border-neutral-200/80 dark:border-neutral-800/80 bg-white/90 dark:bg-[#0B0F0E]/90 backdrop-blur-xl flex items-center justify-between gap-4">
           {/* Zone 1: Brand / Active Section Title */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0 shrink-0">
             <button
               type="button"
               onClick={() => setMobileDrawerOpen((o) => !o)}
               aria-label="Menu Navigasi Lengkap"
-              className="lg:hidden p-2 -ml-1 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="lg:hidden p-2 -ml-1 rounded-xl text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -820,36 +838,38 @@ export default function MoneyScopePage() {
             </span>
           </div>
 
-          {/* Zone 2: Concise Single-Line Navigation Links on Desktop */}
-          <nav className="hidden md:flex items-center gap-5 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            <button
-              type="button"
-              onClick={() => setActiveTab('dashboard')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0"
-            >
-              Ringkasan
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('analytics')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0"
-            >
-              15 Periode Waktu
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('nutrition')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0"
-            >
-              AI Food Scan
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('reports')}
-              className="hover:text-neutral-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0"
-            >
-              Telegram &amp; WA
-            </button>
+          {/* Zone 2: Finnova-Style Dark Capsule Pill Navigation on Desktop */}
+          <nav className="hidden md:flex items-center p-1 rounded-full bg-neutral-900 dark:bg-[#141A18] border border-neutral-800/80 text-xs font-medium text-neutral-300 shadow-sm">
+            {[
+              { id: 'dashboard' as NavTabId, label: 'Ringkasan' },
+              { id: 'analytics' as NavTabId, label: '15 Periode Waktu' },
+              { id: 'nutrition' as NavTabId, label: 'AI Food Scan' },
+              { id: 'studio3d' as NavTabId, label: '3D Vault' },
+              { id: 'reports' as NavTabId, label: 'Telegram & WA' },
+            ].map((pill) => {
+              const isCurrent = activeTab === pill.id;
+              return (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => setActiveTab(pill.id)}
+                  className={`relative px-3.5 py-1.5 rounded-full transition-colors whitespace-nowrap shrink-0 ${
+                    isCurrent
+                      ? 'text-neutral-950 font-bold'
+                      : 'text-neutral-300 hover:text-white'
+                  }`}
+                >
+                  {isCurrent && (
+                    <motion.div
+                      layoutId="top-pill-active"
+                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                      className="absolute inset-0 rounded-full bg-emerald-400 shadow-[0_2px_10px_rgba(16,185,129,0.4)] pointer-events-none"
+                    />
+                  )}
+                  <span className="relative z-10">{pill.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
           {/* Zone 3: Theme Toggle + PWA Install + Primary Action */}
@@ -865,7 +885,7 @@ export default function MoneyScopePage() {
               <button
                 type="button"
                 onClick={() => (isInstallable ? install() : setShowIOSModal(true))}
-                className="px-3 py-1.5 rounded-lg border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 hover:bg-emerald-500/10 transition-colors whitespace-nowrap shrink-0"
+                className="px-3 py-1.5 rounded-full border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 hover:bg-emerald-500/10 transition-colors whitespace-nowrap shrink-0"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Install PWA</span>
@@ -876,53 +896,62 @@ export default function MoneyScopePage() {
               type="button"
               onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
               aria-label="Ubah Tema Terang atau Gelap"
-              className="p-2 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              className="p-2 rounded-full border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <button
+            <motion.button
               type="button"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setQuickAddOpen(true)}
-              className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shadow-[0_4px_14px_rgba(16,185,129,0.3)] whitespace-nowrap shrink-0"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
               <span>Catat Transaksi</span>
-            </button>
+            </motion.button>
           </div>
         </header>
 
         {/* Mobile Secondary Drawer for Reports, Budgets & Settings */}
-        {mobileDrawerOpen && (
-          <div className="lg:hidden bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 py-3 space-y-1.5 z-20">
-            <div className="text-[11px] font-semibold text-neutral-400 pb-1">
-              Semua Modul MoneyScope
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setMobileDrawerOpen(false);
-                    }}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
-                      activeTab === item.id
-                        ? 'bg-emerald-500/15 text-emerald-500 font-semibold'
-                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {mobileDrawerOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="lg:hidden bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 py-3 space-y-1.5 z-20"
+            >
+              <div className="text-[11px] font-semibold text-neutral-400 pb-1">
+                Semua Modul MoneyScope
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setMobileDrawerOpen(false);
+                      }}
+                      className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                        activeTab === item.id
+                          ? 'bg-emerald-500/15 text-emerald-500 font-semibold'
+                          : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Workspace Container */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
@@ -937,24 +966,33 @@ export default function MoneyScopePage() {
 
           {/* TAB 1: DASHBOARD UTAMA */}
           {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Financial Overview Hero Strip (Inspired by Reference Images 2 & 3: High-contrast Lime/Emerald Balance Card + Dark Slate Metrics) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-                {/* Primary Balance Card */}
-                <div className="lg:col-span-5 p-6 rounded-2xl bg-[#D9F99D] dark:bg-[#D9F99D] text-neutral-950 flex flex-col justify-between shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* 4-Card Finnova Bento KPI Strip with Embedded Interactive Micro-Visualizations */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
+                {/* Card 1: Total Saldo Bersih + Cashflow Wave */}
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  className="p-5 rounded-3xl bg-[#D9F99D] dark:bg-[#D9F99D] text-neutral-950 flex flex-col justify-between shadow-sm"
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-800">
                       Total Saldo Bersih · {formatDateID(REFERENCE_TODAY)}
                     </span>
-                    <span className="text-xs font-mono font-semibold text-neutral-800">
+                    <span className="text-[11px] font-mono font-semibold text-neutral-800">
                       IDR · Asia/Jakarta
                     </span>
                   </div>
 
-                  <div className="my-4">
+                  <div className="my-3">
                     <div
                       data-testid="dashboard-total-balance"
-                      className="text-3xl sm:text-4xl font-bold font-mono tabular-nums tracking-tight text-neutral-950"
+                      className="text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight text-neutral-950"
                     >
                       {formatIDR(totalAccountBalance)}
                     </div>
@@ -971,7 +1009,7 @@ export default function MoneyScopePage() {
                       <div className="text-[11px] font-medium text-neutral-700">Total Pemasukan</div>
                       <div
                         data-testid="dashboard-total-income"
-                        className="text-base font-bold font-mono tabular-nums text-emerald-950"
+                        className="text-sm font-bold font-mono tabular-nums text-emerald-950"
                       >
                         +{formatIDR(monthAnalytics.totalIncome)}
                       </div>
@@ -980,98 +1018,224 @@ export default function MoneyScopePage() {
                       <div className="text-[11px] font-medium text-neutral-700">Total Pengeluaran</div>
                       <div
                         data-testid="dashboard-total-expense"
-                        className="text-base font-bold font-mono tabular-nums text-rose-900"
+                        className="text-sm font-bold font-mono tabular-nums text-rose-900"
                       >
                         -{formatIDR(monthAnalytics.totalExpense)}
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Secondary Overview Cards */}
-                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col justify-between">
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                {/* Card 2: Makan Utama vs Jajan + Animated 7-Bar Micro Chart (Finnova Card 2 Style) */}
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  className="p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
                       Makan Utama vs Jajan Bulan Ini
-                    </div>
-                    <div className="my-2 space-y-1.5">
-                      <div>
-                        <div className="text-[11px] text-neutral-400">Makanan Utama</div>
-                        <div className="text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                          {formatIDR(monthAnalytics.makananExpense)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] text-neutral-400">Jajan, Kopi &amp; Camilan</div>
-                        <div className="text-lg font-bold font-mono tabular-nums text-amber-500">
-                          {formatIDR(monthAnalytics.jajanExpense)}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('analytics')}
-                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left"
-                    >
-                      Lihat Drill-Down Kategori →
-                    </button>
+                    </span>
+                    <span className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                      <Utensils className="w-3.5 h-3.5" />
+                    </span>
                   </div>
 
-                  <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col justify-between">
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <div className="grid grid-cols-2 gap-2 my-2.5">
+                    <div>
+                      <div className="text-[11px] text-neutral-400">Makanan Utama</div>
+                      <div className="text-base font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {formatIDR(monthAnalytics.makananExpense)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-neutral-400">Jajan, Kopi &amp; Camilan</div>
+                      <div className="text-base font-bold font-mono tabular-nums text-amber-500">
+                        {formatIDR(monthAnalytics.jajanExpense)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Animated 7-Bar Micro Visualization */}
+                  <div className="h-12 flex items-end justify-between gap-1.5 pt-2 pb-1">
+                    {monthAnalytics.dailySeries.slice(-7).map((day, idx) => {
+                      const maxVal = Math.max(
+                        1,
+                        ...monthAnalytics.dailySeries.slice(-7).map((d) => d.expense + d.income)
+                      );
+                      const barPct =
+                        day.expense + day.income > 0
+                          ? Math.max(22, Math.round(((day.expense + day.income) / maxVal) * 100))
+                          : 18 + ((idx * 11) % 35);
+                      return (
+                        <div key={day.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${barPct}%` }}
+                            transition={{ duration: 0.45, delay: idx * 0.04 }}
+                            className={`w-full rounded-t-md ${
+                              day.expense > 0
+                                ? 'bg-gradient-to-t from-emerald-500/40 to-emerald-400'
+                                : 'bg-neutral-200 dark:bg-neutral-800'
+                            }`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('analytics')}
+                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left pt-1"
+                  >
+                    Lihat Drill-Down Kategori →
+                  </button>
+                </motion.div>
+
+                {/* Card 3: Utilisasi Anggaran + Connected Node-Line Trend (Finnova Card 3 Style) */}
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  className="p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
                       Utilisasi Anggaran (Budget)
-                    </div>
-                    <div className="my-2">
-                      <div className="text-2xl font-bold font-mono tabular-nums text-neutral-900 dark:text-white">
-                        {overallBudgetUtilization}%
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 mt-2 overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 transition-all duration-300"
-                          style={{ width: `${overallBudgetUtilization}%` }}
-                        />
-                      </div>
-                      <div className="text-[11px] text-neutral-400 font-mono tabular-nums mt-1.5">
-                        {formatIDR(totalBudgetSpent)} / {formatIDR(totalBudgetLimit)}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('budgets')}
-                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left"
-                    >
-                      Kelola Batas Anggaran →
-                    </button>
+                    </span>
+                    <span className="w-7 h-7 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
+                      <Clock className="w-3.5 h-3.5" />
+                    </span>
                   </div>
 
-                  <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col justify-between">
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <div className="my-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold font-mono tabular-nums text-neutral-900 dark:text-white">
+                        {overallBudgetUtilization}%
+                      </span>
+                      <span className="text-[11px] text-neutral-400 font-mono tabular-nums">
+                        {formatIDR(totalBudgetSpent)} / {formatIDR(totalBudgetLimit)}
+                      </span>
+                    </div>
+
+                    {/* Connected Node-Line SVG Micro-Chart (Exact Finnova Card 3 Visual) */}
+                    <div className="h-12 w-full mt-2 relative">
+                      <svg viewBox="0 0 200 44" className="w-full h-full overflow-visible">
+                        <defs>
+                          <linearGradient id="nodeLineFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M 6 36 L 42 29 L 78 31 L 114 21 L 152 16 L 192 8 L 192 42 L 6 42 Z"
+                          fill="url(#nodeLineFill)"
+                        />
+                        <path
+                          d="M 6 36 L 42 29 L 78 31 L 114 21 L 152 16 L 192 8"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                        {[
+                          [6, 36],
+                          [42, 29],
+                          [78, 31],
+                          [114, 21],
+                          [152, 16],
+                          [192, 8],
+                        ].map(([cx, cy], i) => (
+                          <circle
+                            key={i}
+                            cx={cx}
+                            cy={cy}
+                            r="3"
+                            className="fill-white dark:fill-neutral-950 stroke-emerald-500 stroke-2"
+                          />
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('budgets')}
+                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left"
+                  >
+                    Kelola Batas Anggaran →
+                  </button>
+                </motion.div>
+
+                {/* Card 4: Nutrisi & Interactive Vertical Wallet Selector (Finnova Card 4 Visa/Stripe/PayPal Style) */}
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  className="p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
                       Nutrisi Harian Terverifikasi
-                    </div>
-                    <div className="my-2">
-                      <div className="text-2xl font-bold font-mono tabular-nums text-neutral-900 dark:text-white">
-                        {todayMacros.cal} <span className="text-xs font-normal text-neutral-400">kkal</span>
-                      </div>
-                      <div className="text-xs font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">
-                        {todayMacros.prot.toFixed(1)}g P · {todayMacros.carb.toFixed(1)}g K · {todayMacros.fat.toFixed(1)}g L
-                      </div>
-                    </div>
+                    </span>
                     <button
                       type="button"
                       onClick={() => setActiveTab('nutrition')}
-                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left"
+                      aria-label="Buka Modul Nutrisi AI"
+                      className="w-7 h-7 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-neutral-500 hover:text-emerald-400 transition-colors"
                     >
-                      Scan Foto Makanan AI →
+                      <ArrowUpRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
+
+                  <div className="my-1.5">
+                    <div className="text-2xl font-bold font-mono tabular-nums text-neutral-900 dark:text-white">
+                      {todayMacros.cal} <span className="text-xs font-normal text-neutral-400">kkal</span>
+                    </div>
+                    <div className="text-[11px] font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {todayMacros.prot.toFixed(1)}g P · {todayMacros.carb.toFixed(1)}g K · {todayMacros.fat.toFixed(1)}g L
+                    </div>
+                  </div>
+
+                  {/* Interactive 3-Card Vertical Wallet Selector (Finnova Card 4 Style) */}
+                  <div className="grid grid-cols-3 gap-1.5 my-1.5">
+                    {accounts.slice(0, 3).map((acc, idx) => {
+                      const activeCard = activeWalletIdx === idx;
+                      const shortLabel = acc.name.replace('Rekening Utama ', '').replace('Dompet ', '').replace('Kas ', '');
+                      return (
+                        <button
+                          key={acc.id}
+                          type="button"
+                          onClick={() => setActiveWalletIdx(idx)}
+                          className={`p-2 rounded-xl text-left transition-all ${
+                            activeCard
+                              ? 'bg-emerald-500 text-neutral-950 font-bold shadow-sm -translate-y-0.5'
+                              : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                          }`}
+                        >
+                          <div className="text-[9px] font-mono opacity-75">•••• {1024 + idx * 311}</div>
+                          <div className="text-[10px] font-semibold truncate mt-1">{shortLabel}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('nutrition')}
+                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline text-left pt-0.5"
+                  >
+                    Scan Foto Makanan AI →
+                  </button>
+                </motion.div>
               </div>
 
               {/* Honest Empty State when Database has 0 Transactions (Section 15 Real Data Policy) */}
               {transactions.length === 0 ? (
-                <div
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.99 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   data-testid="empty-database-state"
-                  className="p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-center max-w-2xl mx-auto space-y-4"
+                  className="p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] text-center max-w-2xl mx-auto space-y-4 shadow-sm"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center mx-auto">
                     <Sparkles className="w-6 h-6" />
@@ -1085,28 +1249,32 @@ export default function MoneyScopePage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                    <button
+                    <motion.button
                       type="button"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => setQuickAddOpen(true)}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center gap-2 transition-colors"
+                      className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center gap-2 transition-colors shadow-sm"
                     >
                       <Plus className="w-4 h-4 stroke-[2.5]" />
                       Tambah Transaksi Pertama
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
                       type="button"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={() => setActiveTab('nutrition')}
-                      className="px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-semibold transition-colors"
+                      className="px-4 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-semibold transition-colors"
                     >
                       Scan Foto Makanan (AI Nutrition)
-                    </button>
+                    </motion.button>
                   </div>
-                </div>
+                </motion.div>
               ) : (
                 <>
                   {/* Charts Row when real transactions exist */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-8 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
+                    <div className="lg:col-span-8 p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <h2 className="text-base font-bold text-neutral-900 dark:text-white">
@@ -1159,7 +1327,7 @@ export default function MoneyScopePage() {
                       </div>
                     </div>
 
-                    <div className="lg:col-span-4 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
+                    <div className="lg:col-span-4 p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#121716] space-y-4">
                       <h2 className="text-base font-bold text-neutral-900 dark:text-white">
                         Komposisi Kategori Pengeluaran
                       </h2>
@@ -1209,75 +1377,217 @@ export default function MoneyScopePage() {
                     </div>
                   </div>
 
-                  {/* Smart Insights & Recent Timeline */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div className="lg:col-span-5 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
-                      <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                        Smart Insights (Dari Transaksi Aktual)
-                      </h2>
-                      <div className="space-y-3">
-                        {smartInsights.map((ins) => (
-                          <div
-                            key={ins.id}
-                            className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950/60 space-y-1"
+                  {/* Finnova-Inspired Master-Detail Split Panel + Smart Insights */}
+                  <div className="p-6 rounded-[28px] bg-[#131722] text-white border border-neutral-800 shadow-lg space-y-6">
+                    {/* Top Header + Centered Segmented Filter Tabs (Finnova Split Panel Style) */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                      <div>
+                        <h2 className="text-base font-bold text-white">
+                          Aktivitas Finansial Terbaru &amp; Smart Inspector
+                        </h2>
+                        <p className="text-xs text-neutral-400">
+                          Klik salah satu transaksi di kiri untuk melihat rincian korelasi &amp; Smart Insights di kanan.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.06] border border-white/10 self-start">
+                        {[
+                          { id: 'all' as const, label: `Semua (${monthAnalytics.filteredTransactions.length})` },
+                          {
+                            id: 'food_jajan' as const,
+                            label: `Makan & Jajan (${
+                              monthAnalytics.filteredTransactions.filter(
+                                (t) => t.category === 'Makanan' || t.category === 'Jajan'
+                              ).length
+                            })`,
+                          },
+                          {
+                            id: 'income' as const,
+                            label: `Pemasukan (${
+                              monthAnalytics.filteredTransactions.filter((t) => t.type === 'income').length
+                            })`,
+                          },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setMasterFilterTab(tab.id)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                              masterFilterTab === tab.id
+                                ? 'bg-emerald-400 text-neutral-950 shadow-sm'
+                                : 'text-neutral-300 hover:text-white'
+                            }`}
                           >
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-neutral-900 dark:text-white">
-                                {ins.title}
-                              </span>
-                            </div>
-                            <p className="text-xs text-neutral-500">{ins.description}</p>
-                            <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 pt-0.5">
-                              {ins.metricLabel}
-                            </div>
-                          </div>
+                            {tab.label}
+                          </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="lg:col-span-7 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                          Aktivitas Finansial Terbaru
-                        </h2>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('transactions')}
-                          className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-                        >
-                          Lihat Semua Transaksi →
-                        </button>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                      {/* Left Column: Selectable Transaction Rows */}
+                      <div className="lg:col-span-5 space-y-2">
+                        {(() => {
+                          const list = monthAnalytics.filteredTransactions
+                            .filter((tx) => {
+                              if (masterFilterTab === 'food_jajan') {
+                                return tx.category === 'Makanan' || tx.category === 'Jajan';
+                              }
+                              if (masterFilterTab === 'income') {
+                                return tx.type === 'income';
+                              }
+                              return true;
+                            })
+                            .slice(0, 6);
+
+                          const activeInspectId = selectedInspectTxId || list[0]?.id;
+
+                          return list.map((tx) => {
+                            const isSelectedRow = tx.id === activeInspectId;
+                            return (
+                              <motion.button
+                                key={tx.id}
+                                type="button"
+                                whileHover={{ x: 3 }}
+                                onClick={() => setSelectedInspectTxId(tx.id)}
+                                className={`w-full p-3.5 rounded-2xl text-left flex items-center justify-between transition-all ${
+                                  isSelectedRow
+                                    ? 'bg-emerald-500 text-neutral-950 shadow-[0_8px_24px_rgba(16,185,129,0.28)]'
+                                    : 'bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.06]'
+                                }`}
+                              >
+                                <div className="min-w-0 pr-3">
+                                  <div className="font-bold text-xs truncate">{tx.description}</div>
+                                  <div
+                                    className={`text-[11px] truncate mt-0.5 ${
+                                      isSelectedRow ? 'text-neutral-900 font-medium' : 'text-neutral-400'
+                                    }`}
+                                  >
+                                    {tx.category} · {tx.subcategory} · {formatDateID(tx.transactionDate)} ·{' '}
+                                    {tx.transactionTime}
+                                  </div>
+                                </div>
+                                <div
+                                  className={`font-mono tabular-nums font-bold text-xs shrink-0 ${
+                                    isSelectedRow
+                                      ? 'text-neutral-950'
+                                      : tx.type === 'income'
+                                      ? 'text-emerald-400'
+                                      : 'text-rose-400'
+                                  }`}
+                                >
+                                  {tx.type === 'income' ? '+' : '-'}
+                                  {formatIDR(tx.amount)}
+                                </div>
+                              </motion.button>
+                            );
+                          });
+                        })()}
+
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('transactions')}
+                            className="text-xs font-semibold text-emerald-400 hover:underline"
+                          >
+                            Lihat Semua Transaksi →
+                          </button>
+                        </div>
                       </div>
-                      <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                        {monthAnalytics.filteredTransactions.slice(0, 6).map((tx) => (
-                          <div key={tx.id} className="py-3 flex items-center justify-between text-xs">
-                            <div>
-                              <div className="font-semibold text-neutral-900 dark:text-white">
-                                {tx.description}
-                              </div>
-                              <div className="text-[11px] text-neutral-500">
-                                {tx.category} · {tx.subcategory} · {formatDateID(tx.transactionDate)} ·{' '}
-                                {tx.transactionTime}
-                              </div>
-                            </div>
-                            <div
-                              className={`font-mono tabular-nums font-bold text-sm ${
-                                tx.type === 'income'
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : 'text-rose-600 dark:text-rose-400'
-                              }`}
+
+                      {/* Right Column: Highlighted Inspector Detail Card + Smart Insights (Finnova Right Panel Style) */}
+                      <div className="lg:col-span-7 space-y-4">
+                        {(() => {
+                          const inspectedTx =
+                            monthAnalytics.filteredTransactions.find((t) => t.id === selectedInspectTxId) ||
+                            monthAnalytics.filteredTransactions[0];
+
+                          if (!inspectedTx) return null;
+
+                          const shareOfExpense =
+                            inspectedTx.type === 'expense' && monthAnalytics.totalExpense > 0
+                              ? Math.round((inspectedTx.amount / monthAnalytics.totalExpense) * 1000) / 10
+                              : 0;
+
+                          return (
+                            <motion.div
+                              key={inspectedTx.id}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="p-5 rounded-3xl bg-gradient-to-br from-emerald-600/25 via-[#182422] to-[#12181B] border border-emerald-500/30 space-y-4"
                             >
-                              {tx.type === 'income' ? '+' : '-'}
-                              {formatIDR(tx.amount)}
-                            </div>
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                  <div className="text-[11px] text-emerald-300 font-medium">
+                                    Rincian Transaksi Terpilih
+                                  </div>
+                                  <div className="text-lg font-bold text-white mt-0.5">
+                                    {inspectedTx.description}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-[11px] text-neutral-400">Nominal Tercatat</div>
+                                  <div className="text-xl font-bold font-mono tabular-nums text-emerald-400">
+                                    {inspectedTx.type === 'income' ? '+' : '-'}
+                                    {formatIDR(inspectedTx.amount)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/10">
+                                  <div className="text-[10px] text-neutral-400">Kategori &amp; Sub</div>
+                                  <div className="text-xs font-bold text-white mt-1">
+                                    {inspectedTx.category} · {inspectedTx.subcategory}
+                                  </div>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/10">
+                                  <div className="text-[10px] text-neutral-400">Waktu &amp; Metode</div>
+                                  <div className="text-xs font-bold font-mono text-white mt-1">
+                                    {inspectedTx.transactionTime} · {inspectedTx.paymentMethod}
+                                  </div>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-white/[0.06] border border-white/10 col-span-2 sm:col-span-1">
+                                  <div className="text-[10px] text-neutral-400">Porsi Pengeluaran</div>
+                                  <div className="text-xs font-bold font-mono text-emerald-300 mt-1">
+                                    {inspectedTx.type === 'expense'
+                                      ? `${shareOfExpense}% dari bulan ini`
+                                      : 'Pemasukan Kas'}
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })()}
+
+                        {/* Smart Insights (Computed from real transactions) */}
+                        <div className="space-y-2.5">
+                          <h3 className="text-xs font-bold text-neutral-300">
+                            Smart Insights (Dari Transaksi Aktual)
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {smartInsights.map((ins) => (
+                              <div
+                                key={ins.id}
+                                className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] space-y-1"
+                              >
+                                <div className="text-xs font-semibold text-white">{ins.title}</div>
+                                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                                  {ins.description}
+                                </p>
+                                <div className="text-[11px] font-mono text-emerald-400 pt-0.5">
+                                  {ins.metricLabel}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* TAB 2: TRANSAKSI */}
